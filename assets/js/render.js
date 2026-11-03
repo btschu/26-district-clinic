@@ -493,20 +493,17 @@
         return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
       };
 
+      // Searching keeps every group that has a matching name (with all of its students, so you can see who
+      // else is in it) and highlights the matching names; groups without a match are hidden.
       function applyStudentView() {
         const term = normalize(searchTerm);
         let cardsShown = 0;
         studentsContainer.querySelectorAll(".students-item").forEach(function (card) {
           let hits = 0;
-          card.querySelectorAll(".students-section").forEach(function (block) {
-            let blockHits = 0;
-            block.querySelectorAll("li").forEach(function (li) {
-              const match = !term || normalize(li.textContent).indexOf(term) !== -1;
-              li.classList.toggle("search-hidden", !match);
-              if (match) blockHits++;
-            });
-            block.classList.toggle("search-hidden", term !== "" && blockHits === 0);
-            hits += blockHits;
+          card.querySelectorAll("li").forEach(function (li) {
+            const match = term !== "" && normalize(li.textContent).indexOf(term) !== -1;
+            li.classList.toggle("student-match", match);
+            if (match) hits++;
           });
           card.setAttribute("data-hits", String(hits));
         });
@@ -514,7 +511,7 @@
         studentsIsotope.arrange({
           filter: function (card) {
             const inGroup = groupFilter === "*" || card.matches(groupFilter);
-            const hasHits = card.getAttribute("data-hits") !== "0";
+            const hasHits = term === "" || card.getAttribute("data-hits") !== "0";
             if (inGroup && hasHits) cardsShown++;
             return inGroup && hasHits;
           },

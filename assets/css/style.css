@@ -640,8 +640,22 @@ section {
   border-color: var(--primary-color);
 }
 
-.search-hidden {
-  display: none !important;
+/* a name found by the search: highlighted in the primary color, the rest of its group stays visible */
+.students .box li.student-match {
+  margin: 1px auto;
+  padding: 1px 10px;
+  width: fit-content;
+  font-weight: 600;
+  color: var(--white-color);
+  background: rgba(255, 255, 255, 0.14);
+  outline: 2px solid var(--primary-color);
+  border-radius: 6px;
+}
+
+@supports (background: color-mix(in srgb, red 50%, transparent)) {
+  .students .box li.student-match {
+    background: color-mix(in srgb, var(--primary-color) 38%, transparent);
+  }
 }
 
 .students #students-filters {
