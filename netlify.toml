@@ -1,0 +1,16 @@
+# Netlify reads this file automatically when the site is published.
+[build]
+  # 1. Find the spreadsheet in data/ (scripts/find-workbook.sh).
+  # 2. Save it as quick-to-load data and write the real title and description into index.html
+  #    so link previews show them (scripts/prepare-site.js).
+  # Neither step can fail the build.
+  command = "sh scripts/find-workbook.sh; node scripts/prepare-site.js || true"
+  # Publish the whole folder as-is.
+  publish = "."
+
+# Keep the site (and the spreadsheet file) out of search engines. People with the link can still
+# open it. Delete this block, and the robots tag in index.html, if you ever want it to be searchable.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"

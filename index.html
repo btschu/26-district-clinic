@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <!-- todo edit data/concert-data.xlsx instead of this file -->
+  <title>YEAR GROUP Concert Program</title>
+  <meta content="" name="description">
+  <meta content="" name="keywords">
+  <!-- Keeps the site out of search engines (people with the link can still open it).
+       Delete this line, and the matching block in netlify.toml, to make it searchable. -->
+  <meta name="robots" content="noindex, nofollow">
+
+  <!-- Favicons -->
+  <link href="assets/img/favicon.png" rel="icon">
+  <link href="assets/img/apple-touch-icon.png" rel="apple-touch-icon">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Caveat&family=Kaushan+Script&family=Playfair+Display&family=Poppins:wght@300;400;600&display=swap"
+    rel="stylesheet">
+
+  <!-- Vendor CSS Files -->
+  <link href="assets/vendor/aos/aos.css" rel="stylesheet">
+  <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+
+  <!-- Template Main CSS File -->
+  <link href="assets/css/style.css" rel="stylesheet">
+  <noscript><style>#hero .container, #header .logo { visibility: visible !important; }</style></noscript>
+
+</head>
+
+<body>
+
+  <!-- ======= Header ======= -->
+  <header id="header" class="fixed-top d-flex align-items-cente">
+    <div class="container-fluid container-xl d-flex align-items-center justify-content-lg-between">
+
+      <div class="logo me-auto me-lg-0"><a href="index.html" id="header-title-text">YEAR TITLE Concert</a></div>
+      <!--! Uncomment below if you prefer to use an image logo -->
+      <!-- <a href="index.html" class="logo me-auto me-lg-0"><img src="assets/img/logo.png" alt="" class="img-fluid"></a> -->
+
+      <!-- Print button: opens the print dialog (the page prints as a 4-page program) -->
+      <a href="#" data-print class="header-print order-lg-1" role="button" aria-label="Print this program">
+        <i class="bi bi-printer" aria-hidden="true"></i><span class="d-none d-sm-inline"> Print</span>
+      </a>
+
+      <nav id="navbar" class="navbar order-last order-lg-0">
+        <ul>
+          <li><a class="nav-link scrollto active" href="#hero">Home</a></li>
+          <li><a class="nav-link scrollto" href="#program">Program</a></li>
+          <li><a class="nav-link scrollto" href="#students">Students</a></li>
+        </ul>
+        <i class="bi bi-list mobile-nav-toggle"></i>
+      </nav>
+
+    </div>
+  </header>
+  <!-- End Header -->
+
+  <!-- ======= Hero Section ======= -->
+  <section id="hero" class="d-flex align-items-center">
+    <div class="container position-relative text-center text-lg-start" data-aos="zoom-in" data-aos-delay="100">
+      <div class="row">
+        <div class="col-lg-12">
+          <h1 class="text-center mb-2 mt-4">
+            <span id="concert-school-name">GROUP</span>
+            <span id="concert-name">TITLE Concert</span>
+          </h1>
+          <hr>
+          <h2 class="text-center" id="concert-datetime-location">DATE<br>TIME<br>LOCATION</h2>
+          <hr>
+          <h2 class="text-center text-decoration-underline">Directors</h2>
+          <h2 class="text-center" id="directors-list">NAME</h2>
+          <div id="accompanist-block" style="display:none;">
+            <h2 class="text-center text-decoration-underline">Accompanist</h2>
+            <h2 class="text-center" id="accompanist-name"></h2>
+          </div>
+          <!-- Director bios: from the Bios tab of the spreadsheet. Hidden when there are none. -->
+          <div id="bios-block" style="display:none;">
+            <h2 class="text-center text-decoration-underline mt-4 mb-4">Director Bios</h2>
+            <div id="bios-buttons" class="d-flex justify-content-around flex-wrap gap-3"></div>
+          </div>
+          <!-- Livestream button: from "Livestream Link" in the spreadsheet. Hidden when it's empty. -->
+          <div class="btns" id="livestream-block" style="display:none;">
+            <a id="livestream-link" href="#" target="_blank" rel="noopener" class="btn-book">&#127909; LIVE STREAM &#127909;</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- End Hero -->
+
+  <main id="main">
+
+    <!-- ======= Program Section ======= -->
+    <section id="program" class="program">
+      <div class="container" data-aos="fade-up">
+
+        <div class="section-title">
+          <p class="text-center">Program</p>
+        </div>
+
+        <div class="row program-container" id="program-container" data-aos="fade-up" data-aos-delay="200">
+          <!-- Program groups are rendered here by assets/js/render.js from the Program tab of data/concert-data.xlsx -->
+        </div>
+      </div>
+    </section>
+    <!-- End program Section -->
+
+    <!-- ======= Students Section ======= -->
+    <section id="students" class="students section-bg">
+      <div class="container" data-aos="fade-up">
+
+        <div class="section-title">
+          <p class="text-center">Students</p>
+        </div>
+
+        <div class="row" data-aos="fade-up" data-aos-delay="100">
+          <div class="col-lg-12 d-flex justify-content-center">
+            <input type="search" id="students-search" placeholder="Search for a student" aria-label="Search for a student by name" autocomplete="off">
+          </div>
+          <div class="col-lg-12 d-flex justify-content-center">
+            <ul id="students-filters" role="group" aria-label="Show students from one group">
+              <!-- Filter buttons are rendered here by assets/js/render.js from the group tabs of data/concert-data.xlsx -->
+            </ul>
+          </div>
+        </div>
+
+        <p id="students-search-empty" class="text-center mt-4" role="status" style="display:none;">No students match that name.</p>
+
+        <div class="row students-container mt-4" id="students-container">
+          <!-- Student groups are rendered here by assets/js/render.js from the group tabs of data/concert-data.xlsx -->
+        </div>
+
+      </div>
+    </section>
+    <!-- End student Section -->
+
+  </main>
+  <!-- End #main -->
+
+  <!-- ======= Footer ======= -->
+  <footer id="footer">
+    <h3 class="text-center mb-0" id="thank-you-heading" style="display:none;">Thank You</h3>
+    <div class="container">
+      <div class="copyright mt-0 mb-4 pt-3" id="thank-you-wrap" style="display:none;">
+        <ul class="list-unstyled" id="thank-you-list"></ul>
+      </div>
+    </div>
+    <h3 class="text-center" id="closing-statement">Thank you for your support!</h3>
+    <!-- ! uncomment to add a logo -->
+    <!-- <a href="" id="logo" class="me-lg-0 d-flex justify-content-center mt-4"><img src="assets/img/logo.png" alt=""
+        class="img-fluid">
+    </a> -->
+    <div class="container">
+      <div class="copyright">
+        Program created by <strong><span>Brandon Schumacher</span></strong>
+      </div>
+
+    </div>
+  </footer>
+  <!-- End Footer -->
+
+  <!-- Director bio pop-up, opened by the buttons in the top section -->
+  <dialog id="bio-dialog" aria-labelledby="bio-dialog-name">
+    <div class="bio-dialog-inner">
+      <button type="button" class="bio-close" data-close-bio aria-label="Close">&times;</button>
+      <img id="bio-dialog-photo" class="bio-photo" alt="" style="display:none;">
+      <h3 id="bio-dialog-name"></h3>
+      <p id="bio-dialog-group" class="bio-group"></p>
+      <div id="bio-dialog-text"></div>
+      <button type="button" class="btn btn-outline-light mt-3" data-close-bio>Close</button>
+    </div>
+  </dialog>
+
+  <div id="preloader"></div>
+  <a href="#" class="back-to-top d-flex align-items-center justify-content-center"><i
+      class="bi bi-arrow-up-short"></i></a>
+
+  <!-- Vendor JS Files -->
+  <script src="assets/vendor/aos/aos.js"></script>
+  <script src="assets/vendor/isotope-layout/isotope.pkgd.min.js"></script>
+
+  <!-- Fills the page from data/site-data.json (made when the site is published), or from the
+       spreadsheet in data/ if that isn't there. The spreadsheet reader is only loaded when needed. -->
+  <script src="assets/js/render.js"></script>
+
+  <!-- Template Main JS File -->
+  <script src="assets/js/main.js"></script>
+
+  <!-- safety: never leave the top of the page hidden, even if the data can't be loaded -->
+  <script>setTimeout(function () { document.body.classList.add("data-ready"); }, 8000);</script>
+
+</body>
+
+</html>
