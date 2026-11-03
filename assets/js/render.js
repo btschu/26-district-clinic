@@ -134,6 +134,7 @@
 
   function el(tag, opts = {}) {
     const node = document.createElement(tag);
+    if (opts.id) node.id = opts.id;
     if (opts.className) node.className = opts.className;
     if (opts.text !== undefined) node.textContent = opts.text;
     if (opts.html !== undefined) node.innerHTML = opts.html;
@@ -589,6 +590,290 @@
     }
   }
 
+  // ---------------------------------------------------------------------------------------------
+  // Printing. The printable program is built here as its own four-page document - (1) title and concert
+  // info, (2) the program, (3) the students, (4) the thank-yous - instead of printing the screen layout.
+  // Browsers (Safari especially) print flex layouts, animations and CSS columns very differently, so every
+  // page is laid out explicitly: the lists are split into balanced columns by estimated height, and the
+  // styles for #print-doc (style.css) only ever show this document when printing.
+  // ---------------------------------------------------------------------------------------------
+  // Heights are estimated in points on a letter page (phones print everything proportionally smaller,
+  // so the same numbers work there). A page holds about 727pt between the margins (0.45in); about 60pt of
+  // that is kept free for the "Program" / "Students" heading and as a safety margin for names that wrap.
+  const PRINT_LAYOUT = {
+    programColumns: 2,
+    studentColumns: 4,
+    columnHeight: 680,
+    studentChunk: 22, // a long list of names is split into pieces this long so it can flow into the next column
+  };
+
+  function lineCount(text, charsPerLine) {
+    return Math.max(1, Math.ceil(String(text || "").length / charsPerLine));
+  }
+
+  // Splits `units` into pages of columns. A unit is { height (pt), group, first, nodes() } and is never
+  // split. The columns are as even as possible (the tallest one as short as it can be), and everything
+  // uses as few pages as will fit. When a column starts in the middle of a group, a small
+  // "(continued)" heading is added at its top.
+  function packColumns(units, columnCount, maxHeight, continuedClass, continuedHeight) {
+    // greedy: fill each column until the next unit would go past `target`; returns the columns
+    function split(target) {
+      const columns = [];
+      let current = [];
+      let used = 0;
+      units.forEach(function (unit) {
+        if (current.length && used + unit.height > target) {
+          columns.push(current);
+          current = [];
+          used = 0;
+        }
+        const continued = !current.length && !unit.first;
+        current.push({ unit: unit, continued: continued });
+        used += unit.height + (continued ? continuedHeight : 0);
+      });
+      columns.push(current);
+      return columns;
+    }
+
+    // the smallest column height that fits everything into `count` columns
+    function fewestHeight(count) {
+      let low = Math.max.apply(null, units.map(function (unit) {
+        return unit.height + continuedHeight;
+      }));
+      let high = units.reduce(function (sum, unit) {
+        return sum + unit.height + continuedHeight;
+      }, 0);
+      while (low < high) {
+        const middle = Math.floor((low + high) / 2);
+        if (split(middle).length <= count) high = middle;
+        else low = middle + 1;
+      }
+      return low;
+    }
+
+    let pageCount = 1;
+    while (fewestHeight(columnCount * pageCount) > maxHeight && pageCount < 50) pageCount += 1;
+    const columns = split(fewestHeight(columnCount * pageCount));
+
+    const pages = [];
+    columns.forEach(function (entries, index) {
+      if (index % columnCount === 0) pages.push([]);
+      const nodes = [];
+      let estimate = 0;
+      entries.forEach(function (entry) {
+        if (entry.continued) {
+          nodes.push(el("div", { className: continuedClass, text: entry.unit.group + " (continued)" }));
+          estimate += continuedHeight;
+        }
+        entry.unit.nodes().forEach(function (node) {
+          nodes.push(node);
+        });
+        estimate += entry.unit.height;
+      });
+      nodes.estimate = estimate;
+      pages[pages.length - 1].push(nodes);
+    });
+    return pages;
+  }
+
+  function columnsPage(columns, extraClass, heading) {
+    const page = el("section", { className: "pd-page " + extraClass });
+    if (heading) page.appendChild(el("h2", { className: "pd-section", text: heading }));
+    const row = el("div", { className: "pd-cols" });
+    columns.forEach(function (nodes) {
+      const col = el("div", { className: "pd-col" });
+      if (nodes.estimate) col.setAttribute("data-estimate", String(Math.round(nodes.estimate)));
+      nodes.forEach(function (node) {
+        col.appendChild(node);
+      });
+      row.appendChild(col);
+    });
+    page.appendChild(row);
+    return page;
+  }
+
+  function printTitlePage(info) {
+    const page = el("section", { className: "pd-page pd-title-page" });
+    if (info.concertTitleLine1) page.appendChild(el("p", { className: "pd-kicker", text: info.concertTitleLine1 }));
+    const title = info.concertTitleLine2 || "";
+    if (title) page.appendChild(el("h1", { className: "pd-title", text: title }));
+
+    const when = [info.concertDate, info.concertTime, info.concertLocation].filter(Boolean);
+    if (when.length) {
+      const box = el("div", { className: "pd-when" });
+      when.forEach(function (line) {
+        box.appendChild(el("div", { text: line }));
+      });
+      page.appendChild(box);
+    }
+
+    const directors = info.directors || [];
+    if (directors.length) {
+      page.appendChild(el("h2", { className: "pd-heading", text: "Directors" }));
+      const box = el("div", { className: "pd-names" });
+      directors.forEach(function (name) {
+        box.appendChild(el("div", { text: name }));
+      });
+      page.appendChild(box);
+    }
+
+    if (info.accompanist && info.accompanist.trim()) {
+      page.appendChild(el("h2", { className: "pd-heading", text: "Accompanist" }));
+      const box = el("div", { className: "pd-names" });
+      box.appendChild(el("div", { text: info.accompanist }));
+      page.appendChild(box);
+    }
+    return page;
+  }
+
+  function printProgramPages(program) {
+    const units = [];
+    (program.groups || []).forEach(function (group) {
+      const songs = group.songs || [];
+      songs.forEach(function (song, index) {
+        const info = Array.isArray(song.info) ? song.info : song.info ? [song.info] : [];
+        const movements = Array.isArray(song.movements) ? song.movements : [];
+
+        // height in points: the title/composer line, then movements and soloists (smaller type)
+        let height = 3 + 11.9 * Math.max(lineCount(song.title, 32), lineCount(song.composer, 21));
+        movements.forEach(function (movement) {
+          height += 10.6 * lineCount(movement, 52);
+        });
+        info.forEach(function (line) {
+          height += 10.6 * lineCount(line, 56);
+        });
+        // the group's name (and directors line) sits above its first song
+        if (index === 0) {
+          height += 11 + 17.3 * lineCount(group.name, 36) + (group.directors ? 4 + 12.5 * lineCount(group.directors, 48) : 0);
+        }
+
+        units.push({
+          height: height,
+          group: group.name,
+          first: index === 0,
+          nodes: function () {
+            const nodes = [];
+            if (index === 0) {
+              const header = el("div", { className: "pp-group" });
+              header.appendChild(el("h3", { text: group.name }));
+              if (group.directors) {
+                const label = /,|&|\band\b|\//i.test(group.directors) ? "Directors: " : "Director: ";
+                const directorsLine = el("p", { className: "pp-directors" });
+                directorsLine.appendChild(document.createTextNode(label));
+                directorsLine.appendChild(el("em", { text: group.directors }));
+                header.appendChild(directorsLine);
+              }
+              nodes.push(header);
+            }
+            const row = el("div", { className: "pp-song" });
+            const head = el("div", { className: "pp-head" });
+            head.appendChild(el("span", { className: "pp-title", text: song.title || "" }));
+            if (song.composer) head.appendChild(el("span", { className: "pp-composer", text: song.composer }));
+            row.appendChild(head);
+            movements.forEach(function (movement, n) {
+              row.appendChild(el("div", { className: "pp-movement", text: n + 1 + ". " + movement }));
+            });
+            info.forEach(function (line) {
+              row.appendChild(el("div", { className: "pp-info", text: line }));
+            });
+            nodes.push(row);
+            return nodes;
+          },
+        });
+      });
+    });
+    if (!units.length) return [];
+
+    return packColumns(units, PRINT_LAYOUT.programColumns, PRINT_LAYOUT.columnHeight, "pp-continued", 26).map(function (columns, i) {
+      return columnsPage(columns, "pd-program", i === 0 ? "Program" : "");
+    });
+  }
+
+  function printStudentPages(students) {
+    const units = [];
+    (students.groups || []).forEach(function (group) {
+      // each instrument's names, cut into pieces if the list is long
+      const blocks = [];
+      (group.sections || []).forEach(function (sec) {
+        const names = sec.students || [];
+        for (let i = 0; i < names.length; i += PRINT_LAYOUT.studentChunk) {
+          blocks.push({ instrument: i === 0 ? sec.instrument : "", names: names.slice(i, i + PRINT_LAYOUT.studentChunk) });
+        }
+      });
+
+      blocks.forEach(function (block, index) {
+        // height in points: the instrument heading, then one line per name (more if a long name wraps)
+        let height = block.instrument && block.instrument.trim() ? 17 : 0;
+        block.names.forEach(function (name) {
+          height += 10.4 * lineCount(name, 22);
+        });
+        // the group's name sits above its first instrument
+        if (index === 0) height += 12 + 15 * lineCount(group.name, 20);
+
+        units.push({
+          height: height,
+          group: group.name,
+          first: index === 0,
+          nodes: function () {
+            const nodes = [];
+            if (index === 0) nodes.push(el("div", { className: "ps-group", text: group.name }));
+            const box = el("div", { className: "ps-block" });
+            if (block.instrument && block.instrument.trim()) box.appendChild(el("h4", { text: block.instrument }));
+            const list = el("ul");
+            block.names.forEach(function (name) {
+              list.appendChild(el("li", { text: name }));
+            });
+            box.appendChild(list);
+            nodes.push(box);
+            return nodes;
+          },
+        });
+      });
+    });
+    if (!units.length) return [];
+
+    return packColumns(units, PRINT_LAYOUT.studentColumns, PRINT_LAYOUT.columnHeight, "ps-continued", 24).map(function (columns, i) {
+      return columnsPage(columns, "pd-students", i === 0 ? "Students" : "");
+    });
+  }
+
+  function printClosingPage(info) {
+    const page = el("section", { className: "pd-page pd-closing-page" });
+    const thanks = info.thankYou || [];
+    if (thanks.length) {
+      page.appendChild(el("h2", { className: "pd-thanks-heading", text: "Thank You" }));
+      const box = el("div", { className: "pd-thanks" });
+      thanks.forEach(function (line) {
+        box.appendChild(el("div", { text: line }));
+      });
+      page.appendChild(box);
+    }
+    page.appendChild(el("p", { className: "pd-closing", text: info.closingStatement || "Thank you for your support!" }));
+
+    // the "Program created by ..." credit is kept in the page's footer
+    const credits = document.querySelectorAll("#footer .copyright");
+    const credit = credits.length ? credits[credits.length - 1].textContent.replace(/\s+/g, " ").trim() : "";
+    if (credit) page.appendChild(el("p", { className: "pd-credit", text: credit }));
+    return page;
+  }
+
+  function buildPrintDocument(data) {
+    const existing = document.getElementById("print-doc");
+    if (existing) existing.remove();
+
+    const doc = el("div", { id: "print-doc" });
+    doc.setAttribute("aria-hidden", "true");
+    doc.appendChild(printTitlePage(data.info || {}));
+    printProgramPages(data.program || {}).forEach(function (page) {
+      doc.appendChild(page);
+    });
+    printStudentPages(data.students || {}).forEach(function (page) {
+      doc.appendChild(page);
+    });
+    doc.appendChild(printClosingPage(data.info || {}));
+    document.body.appendChild(doc);
+  }
+
   // "Print" buttons: the browser's print dialog (the page has its own print layout, see style.css)
   function setupPrintButtons() {
     document.querySelectorAll("[data-print]").forEach(function (button) {
@@ -608,6 +893,7 @@
       renderStudents(data.students);
       renderBios(data.bios);
       setupBioDialog();
+      buildPrintDocument(data);
       setupPrintButtons();
 
       initIsotope();

@@ -193,7 +193,7 @@ a:hover {
 
 @media (min-width: 992px) {
   #header .header-print {
-    margin: 0 0 0 28px;
+    margin: 0 0 0 12px;
   }
 }
 
@@ -894,328 +894,258 @@ section {
 }
 
 /*--------------------------------------------------------------
-# Printing: plain black text on white, every group shown, no buttons or photo
+# Printing
+# The page prints a separate document, #print-doc, that render.js builds as four pages (title and
+# concert info, program, students, thank-yous). The screen layout is hidden when printing. Everything
+# is plain black on white. All sizes are multiplied by --ps; phones lay the page out at their narrow
+# screen width and then enlarge it to fit the paper, so --ps is halved there to print the same size.
 --------------------------------------------------------------*/
+#print-doc {
+  display: none;
+}
+
 @page {
-  margin: 0.5in;
+  margin: 0.45in;
 }
 
 @media print {
-  #header,
-  #preloader,
-  .back-to-top,
-  #students-filters,
-  #bios-block,
-  #livestream-block,
-  #students-search,
-  #students-search-empty,
-  #bio-dialog,
-  #hero:before {
+  :root {
+    --ps: 1;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    margin: 0;
+  }
+
+  body > *:not(#print-doc) {
     display: none !important;
   }
 
-  /* anything the name search hid on screen prints anyway */
-  .search-hidden {
-    display: revert !important;
-  }
-
-  body,
-  #hero,
-  section,
-  .section-bg,
-  #footer {
-    background: #fff !important;
-    color: #000 !important;
-  }
-
-  body:not(.data-ready) #hero .container,
-  body:not(.data-ready) #header .logo {
-    visibility: visible !important;
-  }
-
-  /* page 1: title, concert info and directors (no height tied to the screen, so phones don't spill onto extra pages) */
-  #hero {
-    min-height: 0 !important;
-    padding: 0.8in 0 0 !important;
-    background-image: none !important;
-  }
-
-  /* page 2: the program, page 3: the students, page 4: the thank-yous */
-  #program,
-  #students,
-  #footer {
-    break-before: page;
-    page-break-before: always;
-  }
-
-  #footer {
-    border-top: 0 !important;
-    padding: 40px 0 0 !important;
-  }
-
-  #footer #closing-statement {
-    border-color: #000 !important;
-  }
-
-  #hero .container {
-    min-height: 0;
-    border-left: 0;
-  }
-
-  section {
-    padding: 14px 0 !important;
-  }
-
-  * {
-    color: #000 !important;
-    text-shadow: none !important;
-    box-shadow: none !important;
-  }
-
-  hr {
-    border-top: 1px solid #000 !important;
-    opacity: 1 !important;
-  }
-
-  .program-container,
-  .students-container {
-    height: auto !important;
-  }
-
-  .program-item,
-  .students-item {
-    position: static !important;
-    transform: none !important;
-    width: 100% !important;
-    display: block !important;
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
-  .students .box {
-    background: #fff !important;
-    border: 1px solid #999;
-    margin-bottom: 12px;
-  }
-
-  /* compact type, and the program and student lists flow into columns, so they take few pages */
-  .section-title {
-    padding-bottom: 8px;
-  }
-
-  .section-title p {
-    font-size: 24pt !important;
-  }
-
-  #program {
-    width: 100% !important;
-  }
-
-  #program .container,
-  #students .container {
-    max-width: none !important;
-    padding: 0 !important;
-  }
-
-  /* program: columns of groups (as many 3.2in-wide columns as fit; one on a narrow page) */
-  .program-container {
-    display: block !important;
-    columns: 3.2in;
-    column-gap: 22px;
-    margin: 0 !important;
-  }
-
-  /* a group may continue in the next column or page, but a song (with its soloists) stays together */
-  .program .program-item {
-    margin-bottom: 8px;
-    padding: 0 !important;
-    break-inside: auto !important;
-    page-break-inside: auto !important;
-  }
-
-  .program-item tr {
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
-  .program-item h2 {
-    font-size: 15pt !important;
-    margin-bottom: 3px !important;
-  }
-
-  .program-item .program-directors {
-    font-size: 10pt;
-    margin-bottom: 4px !important;
-  }
-
-  .program-item .table,
-  .program-item .table td {
-    font-size: 9.5pt;
-    padding: 1px 0 !important;
+  #print-doc {
+    display: block;
+    color: #000;
+    background: #fff;
+    font-family: var(--default-font);
     line-height: 1.25;
-  }
-
-  .program-item .table ul {
-    font-size: 8.5pt;
-    line-height: 1.2;
-  }
-
-  .program-item .table-responsive {
-    overflow: visible;
-  }
-
-  /* students: groups flow down columns about 1.7in wide (four on a letter page, fewer on a narrow one) */
-  .students-container {
-    display: block !important;
-    columns: 1.7in;
-    column-gap: 10px;
-    margin: 0 !important;
-  }
-
-  /* a group may continue in the next column, but an instrument's names stay together */
-  .students-item {
-    padding: 0 !important;
-    margin: 0 0 6px !important;
-    break-inside: auto !important;
-    page-break-inside: auto !important;
-  }
-
-  .students .box {
-    padding: 0 !important;
-    margin: 0 !important;
-    border: 0 !important;
-    background: none !important;
-  }
-
-  .students .box span {
-    font-size: 12pt !important;
-    margin-bottom: 2px !important;
-    padding-bottom: 1px;
-    border-bottom: 1px solid #000;
-    break-after: avoid;
-    page-break-after: avoid;
-  }
-
-  .students-section {
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
-  .students .box h4 {
-    font-size: 8.5pt !important;
-    margin: 3px 0 1px !important;
-  }
-
-  .students .box ul {
-    margin: 0 !important;
-  }
-
-  .students .box li {
-    font-size: 9pt;
-    line-height: 1.2;
-  }
-
-  #footer h3 {
-    font-size: 30pt !important;
-  }
-
-  [data-aos] {
-    opacity: 1 !important;
-    transform: none !important;
-  }
-}
-
-/* Printing from a phone: the page is laid out at the phone's narrow width (about 390px) and then enlarged
-   about 2x to fit the paper. So every size below is the letter-page size divided by 2, which prints
-   exactly like the letter-page layout above: same four pages, same type size on paper. */
-@media print and (max-width: 600px) {
-  html {
     -webkit-text-size-adjust: none;
     text-size-adjust: none;
   }
 
-  #hero {
-    padding-top: 0.4in !important;
+  #print-doc * {
+    color: #000;
+    box-sizing: border-box;
   }
 
-  .section-title {
-    padding-bottom: 4px;
+  /* (the site's own `section` styles add padding and hide overflow, so undo them here) */
+  .pd-page {
+    padding: 0;
+    overflow: visible;
+    break-after: page;
+    page-break-after: always;
   }
 
-  .section-title p {
-    font-size: 12pt !important;
+  .pd-page:last-child {
+    break-after: auto;
+    page-break-after: auto;
   }
 
-  /* spacing is in px (which doesn't shrink with the type), so halve it too */
-  .program .program-item {
-    margin-bottom: 4px;
+  /* page 1: title, concert info, directors */
+  .pd-title-page {
+    padding-top: calc(0.9in * var(--ps));
+    text-align: center;
   }
 
-  .program-item h2 {
-    margin-bottom: 1px !important;
+  .pd-kicker {
+    margin: 0 0 calc(10pt * var(--ps));
+    font-size: calc(14pt * var(--ps));
+    font-weight: 300;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
   }
 
-  .program-item .program-directors {
-    margin-bottom: 2px !important;
+  .pd-title {
+    margin: 0 0 calc(18pt * var(--ps));
+    padding-bottom: calc(14pt * var(--ps));
+    border-bottom: 1px solid #000;
+    font-family: var(--primary-title-font);
+    font-size: calc(44pt * var(--ps));
+    font-weight: 400;
+    line-height: 1.15;
   }
 
-  .program-item .table td {
-    padding: 0 !important;
+  .pd-when,
+  .pd-names {
+    font-size: calc(15pt * var(--ps));
+    line-height: 1.5;
   }
 
-  .students-item {
-    margin-bottom: 3px !important;
+  .pd-heading {
+    margin: calc(26pt * var(--ps)) 0 calc(4pt * var(--ps));
+    font-family: var(--default-font);
+    font-size: calc(15pt * var(--ps));
+    font-weight: 400;
+    text-decoration: underline;
   }
 
-  .students .box h4 {
-    margin: 1.5px 0 0.5px !important;
+  /* pages 2 and 3: lists in balanced columns */
+  .pd-section {
+    margin: 0 0 calc(6pt * var(--ps));
+    font-family: var(--primary-title-font);
+    font-size: calc(24pt * var(--ps));
+    font-weight: 400;
+    text-align: center;
   }
 
-  .students .box span {
-    margin-bottom: 1px !important;
+  .pd-cols {
+    display: flex;
+    align-items: flex-start;
+    gap: calc(22pt * var(--ps));
   }
 
-  .program-container {
-    columns: 1.6in;
-    column-gap: 10px;
+  .pd-col {
+    flex: 1 1 0;
+    min-width: 0;
   }
 
-  .program-item h2 {
-    font-size: 7.5pt !important;
+  .pd-students .pd-cols {
+    gap: calc(12pt * var(--ps));
   }
 
-  .program-item .program-directors {
-    font-size: 5pt;
+  /* program */
+  .pp-group {
+    margin: calc(8pt * var(--ps)) 0 calc(3pt * var(--ps));
+    text-align: center;
   }
 
-  .program-item .table,
-  .program-item .table td {
-    font-size: 4.75pt;
+  .pp-group h3,
+  .pp-continued {
+    margin: 0;
+    font-family: var(--secondary-title-font);
+    font-size: calc(15pt * var(--ps));
+    font-weight: 400;
+    line-height: 1.15;
   }
 
-  .program-item .table ul {
-    font-size: 4.25pt;
+  .pp-continued {
+    margin: calc(8pt * var(--ps)) 0 calc(3pt * var(--ps));
+    text-align: center;
+    font-size: calc(12pt * var(--ps));
   }
 
-  .students-container {
-    columns: 0.85in;
-    column-gap: 5px;
+  .pp-directors {
+    margin: calc(2pt * var(--ps)) 0 0;
+    font-size: calc(10pt * var(--ps));
   }
 
-  .students .box span {
-    font-size: 6pt !important;
+  .pp-song {
+    margin: 0 0 calc(3pt * var(--ps));
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 
-  .students .box h4 {
-    font-size: 4.25pt !important;
+  .pp-head {
+    display: flex;
+    justify-content: space-between;
+    gap: calc(8pt * var(--ps));
+    font-size: calc(9.5pt * var(--ps));
   }
 
-  .students .box li {
-    font-size: 4.5pt;
+  .pp-composer {
+    flex: none;
+    max-width: 40%;
+    text-align: right;
   }
 
-  #footer h3 {
-    font-size: 15pt !important;
+  .pp-movement,
+  .pp-info {
+    padding-left: calc(10pt * var(--ps));
+    font-size: calc(8.5pt * var(--ps));
+  }
+
+  .pp-info {
+    font-style: italic;
+  }
+
+  /* students */
+  .ps-group,
+  .ps-continued {
+    margin: calc(8pt * var(--ps)) 0 calc(3pt * var(--ps));
+    padding-bottom: calc(1pt * var(--ps));
+    border-bottom: 1px solid #000;
+    font-family: var(--primary-title-font);
+    font-size: calc(12pt * var(--ps));
+    text-align: center;
+  }
+
+  .ps-continued {
+    border-bottom: 0;
+    font-size: calc(10pt * var(--ps));
+  }
+
+  .ps-block {
+    text-align: center;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .ps-block h4 {
+    margin: calc(3pt * var(--ps)) 0 calc(1pt * var(--ps));
+    font-family: var(--secondary-title-font);
+    font-size: calc(10.5pt * var(--ps));
+    font-weight: 400;
+  }
+
+  .ps-block ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: calc(9pt * var(--ps));
+    line-height: 1.15;
+  }
+
+  /* page 4: thank-yous and closing message */
+  .pd-closing-page {
+    padding-top: calc(1in * var(--ps));
+    text-align: center;
+  }
+
+  .pd-thanks-heading {
+    margin: 0 0 calc(8pt * var(--ps));
+    font-family: var(--primary-title-font);
+    font-size: calc(26pt * var(--ps));
+    font-weight: 400;
+  }
+
+  .pd-thanks {
+    margin-bottom: calc(26pt * var(--ps));
+    font-size: calc(12pt * var(--ps));
+    line-height: 1.6;
+  }
+
+  .pd-closing {
+    display: block;
+    width: fit-content;
+    max-width: 90%;
+    margin: 0 auto calc(20pt * var(--ps));
+    padding: calc(16pt * var(--ps)) calc(28pt * var(--ps));
+    border: 2px solid #000;
+    border-radius: calc(12pt * var(--ps));
+    font-family: var(--secondary-title-font);
+    font-size: calc(30pt * var(--ps));
+    line-height: 1.2;
+  }
+
+  .pd-credit {
+    font-size: calc(10pt * var(--ps));
   }
 }
 
+/* Printing from a phone: the page is laid out at the phone's narrow width (about 390px) and then
+   enlarged about 2x to fit the paper, so everything is half size to come out the same on paper. */
+@media print and (max-width: 600px) {
+  :root {
+    --ps: 0.5;
+  }
+}
