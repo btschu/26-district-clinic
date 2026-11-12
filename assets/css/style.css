@@ -694,13 +694,68 @@ section {
 }
 
 .students .box {
+  height: 100%;
   padding: 20px;
   text-align: center;
   background-color: #22252a;
   border-radius: 9px;
-  margin: 15px 5px;
+  margin: 0;
   /* box-shadow: inset 0 3px 6px rgba(0,0,0,0.16), 0 4px 6px rgba(0,0,0,0.45) !important; */
   transition: all ease-in-out 0.3s;
+}
+
+/* the student groups: cards share the row, up to four across, and a short last row is centered.
+   render.js sets --student-cols (computer), --student-cols-md (tablet) and data-shown (how many are showing). */
+.students-container {
+  --student-gap: 22px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+  gap: var(--student-gap);
+}
+
+.students-item {
+  flex: 0 0 calc((100% - (var(--student-cols, 4) - 1) * var(--student-gap)) / var(--student-cols, 4) - 0.5px);
+  min-width: 0;
+}
+
+@media (max-width: 991px) {
+  .students-item {
+    flex-basis: calc((100% - (var(--student-cols-md, 2) - 1) * var(--student-gap)) / var(--student-cols-md, 2) - 0.5px);
+  }
+}
+
+@media (max-width: 575px) {
+  .students-item {
+    flex-basis: 100%;
+  }
+}
+
+/* a single group shouldn't stretch across the whole page */
+.students-container[data-shown="1"] {
+  max-width: 560px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* with only one or two groups the cards are wide, so the instrument sections run in two columns */
+@media (min-width: 992px) {
+  .students-container[data-shown="1"] .box,
+  .students-container[data-shown="2"] .box {
+    column-count: 2;
+    column-gap: 32px;
+  }
+
+  .students-container[data-shown="1"] .box > span,
+  .students-container[data-shown="2"] .box > span {
+    column-span: all;
+  }
+
+  .students-container[data-shown="1"] .students-section,
+  .students-container[data-shown="2"] .students-section {
+    break-inside: avoid;
+  }
 }
 
 .students .box span {

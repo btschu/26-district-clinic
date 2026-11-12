@@ -445,7 +445,7 @@
 
     container.innerHTML = "";
     groups.forEach(function (g, i) {
-      const col = el("div", { className: "col-lg-4 col-sm-12 mt-lg-0 students-item " + groupFilterClasses[i] });
+      const col = el("div", { className: "students-item " + groupFilterClasses[i] });
       const box = el("div", { className: "box" });
 
       box.appendChild(el("span", { className: "text-center", text: g.name }));
@@ -457,6 +457,7 @@
           block.appendChild(el("h4", { text: sec.instrument }));
         }
         const ul = el("ul");
+        // a long list of names can run in two columns when the card is wide (see style.css)
         (sec.students || []).forEach(function (name) {
           ul.appendChild(el("li", { text: name }));
         });
@@ -469,6 +470,106 @@
     });
   }
 
+  // How many cards go across. As many as fit (up to `max`), but if that would leave a short last row
+  // (5 groups as 4 + 1), a count that fills the rows better is used instead (3 + 2). Ties go to the wider
+  // row, so 8 groups are 4 + 4 and 7 are 4 + 3 (and never fewer than three across). The short last row is
+  // centered by the layout.
+  function balancedColumns(count, max) {
+    const most = Math.max(1, Math.min(max, count));
+    let best = most;
+    let bestEmpty = (most - (count % most)) % most;
+    for (let columns = most - 1; columns >= Math.min(3, most); columns--) {   // never fewer than three across
+      const empty = (columns - (count % columns)) % columns;
+      if (empty < bestEmpty) {
+        best = columns;
+        bestEmpty = empty;
+      }
+    }
+    return best;
+  }
+
+  // Tells the layout how many cards to put across: up to four on a computer, up to two on a tablet
+  // (one on a phone). Also notes how many are showing, so a single wide group can be handled in the CSS.
+  function setStudentColumns(container, shown) {
+    container.setAttribute("data-shown", String(shown));
+    container.style.setProperty("--student-cols", String(balancedColumns(shown, 4)));
+    container.style.setProperty("--student-cols-md", String(balancedColumns(shown, 2)));
+  }
+
+  // The group buttons and the name search. A card is shown when it is in the chosen group and (if something
+  // is typed) has a matching name; the columns re-balance to however many cards are showing.
+  function initStudents() {
+    const studentsContainer = document.querySelector(".students-container");
+    if (!studentsContainer) return;
+    setStudentColumns(studentsContainer, studentsContainer.querySelectorAll(".students-item").length);
+
+    const studentsFilters = [...document.querySelectorAll("#students-filters li")];
+
+    // what is currently shown: the chosen group button AND the text in the name search
+    let groupFilter = "*";
+    let searchTerm = "";
+
+    const normalize = function (text) {
+      return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+    };
+
+    // Searching keeps every group that has a matching name (with all of its students, so you can see who
+    // else is in it) and highlights the matching names; groups without a match are hidden.
+    function applyStudentView() {
+      const term = normalize(searchTerm);
+      let cardsShown = 0;
+      studentsContainer.querySelectorAll(".students-item").forEach(function (card) {
+        let hits = 0;
+        card.querySelectorAll("li").forEach(function (li) {
+          const match = term !== "" && normalize(li.textContent).indexOf(term) !== -1;
+          li.classList.toggle("student-match", match);
+          if (match) hits++;
+        });
+        const inGroup = groupFilter === "*" || card.matches(groupFilter);
+        const show = inGroup && (term === "" || hits > 0);
+        card.hidden = !show;
+        if (show) cardsShown++;
+      });
+      setStudentColumns(studentsContainer, cardsShown);
+      if (window.AOS) AOS.refresh();
+
+      const empty = document.getElementById("students-search-empty");
+      if (empty) empty.style.display = term && cardsShown === 0 ? "" : "none";
+    }
+
+    studentsFilters.forEach(function (li) {
+      li.addEventListener("keydown", function (event) {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          this.click();
+        }
+      });
+      li.addEventListener("click", function () {
+        studentsFilters.forEach(function (other) {
+          other.classList.remove("filter-active-students");
+          other.setAttribute("aria-pressed", "false");
+        });
+        this.classList.add("filter-active-students");
+        this.setAttribute("aria-pressed", "true");
+
+        groupFilter = this.getAttribute("data-filter");
+        applyStudentView();
+      });
+    });
+
+    const searchBox = document.getElementById("students-search");
+    if (searchBox) {
+      let searchTimer;
+      searchBox.addEventListener("input", function () {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(function () {
+          searchTerm = searchBox.value;
+          applyStudentView();
+        }, 120);
+      });
+    }
+  }
+
   function initIsotope() {
     if (typeof Isotope === "undefined") return;
 
@@ -477,84 +578,6 @@
     const programContainer = document.querySelector(".program-container");
     if (programContainer) {
       layouts.push(new Isotope(programContainer, { itemSelector: ".program-item", layoutMode: "fitRows" }));
-    }
-
-    const studentsContainer = document.querySelector(".students-container");
-    if (studentsContainer) {
-      const studentsIsotope = new Isotope(studentsContainer, { itemSelector: ".students-item", layoutMode: "fitRows" });
-      layouts.push(studentsIsotope);
-      const studentsFilters = [...document.querySelectorAll("#students-filters li")];
-
-      // what is currently shown: the chosen group button AND the text in the name search
-      let groupFilter = "*";
-      let searchTerm = "";
-
-      const normalize = function (text) {
-        return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
-      };
-
-      // Searching keeps every group that has a matching name (with all of its students, so you can see who
-      // else is in it) and highlights the matching names; groups without a match are hidden.
-      function applyStudentView() {
-        const term = normalize(searchTerm);
-        let cardsShown = 0;
-        studentsContainer.querySelectorAll(".students-item").forEach(function (card) {
-          let hits = 0;
-          card.querySelectorAll("li").forEach(function (li) {
-            const match = term !== "" && normalize(li.textContent).indexOf(term) !== -1;
-            li.classList.toggle("student-match", match);
-            if (match) hits++;
-          });
-          card.setAttribute("data-hits", String(hits));
-        });
-
-        studentsIsotope.arrange({
-          filter: function (card) {
-            const inGroup = groupFilter === "*" || card.matches(groupFilter);
-            const hasHits = term === "" || card.getAttribute("data-hits") !== "0";
-            if (inGroup && hasHits) cardsShown++;
-            return inGroup && hasHits;
-          },
-        });
-
-        const empty = document.getElementById("students-search-empty");
-        if (empty) empty.style.display = term && cardsShown === 0 ? "" : "none";
-      }
-
-      studentsFilters.forEach(function (li) {
-        li.addEventListener("keydown", function (event) {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            this.click();
-          }
-        });
-        li.addEventListener("click", function () {
-          studentsFilters.forEach(function (other) {
-            other.classList.remove("filter-active-students");
-            other.setAttribute("aria-pressed", "false");
-          });
-          this.classList.add("filter-active-students");
-          this.setAttribute("aria-pressed", "true");
-
-          groupFilter = this.getAttribute("data-filter");
-          applyStudentView();
-        });
-      });
-      studentsIsotope.on("arrangeComplete", function () {
-        if (window.AOS) AOS.refresh();
-      });
-
-      const searchBox = document.getElementById("students-search");
-      if (searchBox) {
-        let searchTimer;
-        searchBox.addEventListener("input", function () {
-          clearTimeout(searchTimer);
-          searchTimer = setTimeout(function () {
-            searchTerm = searchBox.value;
-            applyStudentView();
-          }, 120);
-        });
-      }
     }
 
     // Isotope measures each box's height once, when it starts. Web fonts and other late content can
@@ -581,7 +604,7 @@
         clearTimeout(timer);
         timer = setTimeout(relayout, 60);
       });
-      document.querySelectorAll(".program-item, .students-item").forEach(function (item) {
+      document.querySelectorAll(".program-item").forEach(function (item) {
         observer.observe(item);
       });
     }
@@ -893,6 +916,7 @@
       buildPrintDocument(data);
       setupPrintButtons();
 
+      initStudents();
       initIsotope();
     } catch (err) {
       console.error("Failed to load concert data:", err);
